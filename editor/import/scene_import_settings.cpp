@@ -52,6 +52,7 @@ class SceneImportSettingsData : public Object {
 	List<ResourceImporter::ImportOption> options;
 	bool hide_options = false;
 	String path;
+	String current_id; 
 
 	ResourceImporterScene::InternalImportCategory category = ResourceImporterScene::INTERNAL_IMPORT_CATEGORY_MAX;
 
@@ -67,7 +68,7 @@ class SceneImportSettingsData : public Object {
 
 			// SceneImportSettings must decide if a new collider should be generated or not.
 			if (category == ResourceImporterScene::INTERNAL_IMPORT_CATEGORY_MESH_3D_NODE) {
-				SceneImportSettings::get_singleton()->request_generate_collider();
+				SceneImportSettings::get_singleton()->request_generate_collider_for_id(current_id);
 			}
 
 			if (SceneImportSettings::get_singleton()->is_editing_animation()) {
@@ -450,7 +451,7 @@ void SceneImportSettings::_update_view_gizmos() {
 
 		MeshInstance3D *collider_view = static_cast<MeshInstance3D *>(descendants[0].operator Object *());
 		collider_view->set_visible(show_collider_view);
-		if (generate_collider) {
+		if (generate_collider_request_id.size() && generate_collider_request_id == e.key) {
 			// This collider_view doesn't have a mesh so we need to generate a new one.
 			Ref<ImporterMesh> mesh;
 			mesh.instantiate();
@@ -516,7 +517,7 @@ void SceneImportSettings::_update_view_gizmos() {
 		}
 	}
 
-	generate_collider = false;
+	generate_collider_request_id.clear();
 }
 
 void SceneImportSettings::_update_camera() {
@@ -581,8 +582,8 @@ void SceneImportSettings::_load_default_subresource_settings(HashMap<StringName,
 	}
 }
 
-void SceneImportSettings::request_generate_collider() {
-	generate_collider = true;
+void SceneImportSettings::request_generate_collider_for_id(const String &p_id) {
+	generate_collider_request_id = p_id;
 }
 
 void SceneImportSettings::update_view() {
@@ -697,6 +698,7 @@ Node *SceneImportSettings::get_selected_node() {
 void SceneImportSettings::_select(Tree *p_from, String p_type, String p_id) {
 	selecting = true;
 	scene_import_settings_data->hide_options = false;
+	scene_import_settings_data->current_id = p_id;
 
 	if (p_type == "Node") {
 		node_selected->hide(); // Always hide just in case.
